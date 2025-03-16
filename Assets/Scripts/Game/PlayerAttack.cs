@@ -16,6 +16,8 @@ public class PlayerAttack : MonoBehaviour
 
     private bool _isAiming;
 
+    private TargetMark _target;
+
     private void OnEnable()
     {
         _playerControls.Enable();
@@ -54,6 +56,11 @@ public class PlayerAttack : MonoBehaviour
     {
         _isAiming = context.ReadValueAsButton();
         _trailTransform.gameObject.SetActive(_isAiming);
+
+        if (_target != null && _isAiming == false)
+        {
+            _target.GetComponent<MeshRenderer>().enabled = false;
+        }
     }
 
     private void OnShoot(InputAction.CallbackContext context)
@@ -75,16 +82,26 @@ public class PlayerAttack : MonoBehaviour
                 _trailTransform.forward = direction;
             }
 
-            RaycastHit[] raycastHits = Physics.RaycastAll(_trailTransform.position + _trailTransform.forward, _trailTransform.forward, 8.0f);
             Debug.DrawRay(_trailTransform.position + _trailTransform.forward, _trailTransform.forward * 8, Color.red);
 
-            foreach (RaycastHit hit in raycastHits)
+            if (Physics.Raycast(_trailTransform.position, _trailTransform.forward, out RaycastHit hit, 8.0f))
             {
                 if (hit.collider.TryGetComponent(out TargetMark targetMark))
                 {
-                    targetMark.IsTarget = true;
-                    Debug.Log("SHOWED");
+                    if (_target != targetMark && _target != null)
+                        _target.GetComponent<MeshRenderer>().enabled = false;
+
+                    _target = targetMark;
+                    _target.GetComponent<MeshRenderer>().enabled = true;
                 }
+                else if (_target != null)
+                {
+                    _target.GetComponent<MeshRenderer>().enabled = false;
+                }
+            }
+            else if (_target != null)
+            {
+                _target.GetComponent<MeshRenderer>().enabled = false;
             }
         }
     }
